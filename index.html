@@ -1,0 +1,290 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TradePilot</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#0b1020;color:#f1f5f9;font-family:Arial,sans-serif}
+header{padding:22px 18px;background:#111a2e;border-bottom:1px solid #26334b}
+.logo{font-size:25px;font-weight:bold;color:#42d6a4}
+.logo span{color:white}
+.sub{color:#94a3b8;font-size:12px;margin-top:5px}
+main{padding:18px;max-width:700px;margin:auto}
+.card{background:#151f33;border:1px solid #26344d;border-radius:15px;padding:18px;margin-bottom:15px}
+.muted{color:#94a3b8;font-size:13px}
+.balance{font-size:32px;font-weight:bold;margin:10px 0}
+.green{color:#42d6a4}
+.red{color:#fb7185}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.stat{background:#1c2940;padding:14px;border-radius:12px}
+.stat strong{display:block;font-size:19px;margin-top:8px}
+h2{font-size:18px;margin:8px 0 15px}
+h3{font-size:15px;margin:0}
+.stock{padding:15px 0;border-bottom:1px solid #29364b}
+.stock:last-child{border:0}
+button{border:0;border-radius:9px;padding:11px 17px;background:#42d6a4;color:#071a17;font-weight:bold;cursor:pointer}
+button.secondary{background:#29364b;color:white}
+button.sell{background:#fb7185;color:#240810}
+input,select{width:100%;padding:13px;margin:8px 0 15px;background:#0d1729;color:white;border:1px solid #35445d;border-radius:9px;font-size:15px}
+label{font-size:13px;color:#aab8cc}
+.tabs{display:flex;gap:8px;margin:15px 0;overflow:auto}
+.tabs button{flex:1;min-width:85px}
+.tabs button.active{background:#42d6a4;color:#071a17}
+.panel{display:none}
+.panel.active{display:block}
+.small{font-size:12px;color:#94a3b8}
+.notice{background:#29364b;padding:12px;border-radius:9px;font-size:12px;color:#cbd5e1;line-height:1.6}
+footer{text-align:center;color:#64748b;font-size:11px;padding:20px}
+</style>
+</head>
+<body>
+<header>
+ <div class="logo">✦ Trade<span>Pilot</span></div>
+ <div class="sub">YOUR VIRTUAL TRADING TERMINAL</div>
+</header>
+
+<main>
+ <div class="card">
+  <div class="row">
+   <span class="muted">Virtual Account Balance</span>
+   <span class="green">● DEMO</span>
+  </div>
+  <div class="balance" id="balance">₹10,00,000</div>
+  <div class="row">
+   <span class="muted">Available Cash</span>
+   <strong id="cash">₹10,00,000</strong>
+  </div>
+ </div>
+
+ <div class="stats">
+  <div class="stat">
+   <span class="muted">Invested Value</span>
+   <strong id="invested">₹0</strong>
+  </div>
+  <div class="stat">
+   <span class="muted">Total P/L</span>
+   <strong class="green" id="profit">₹0</strong>
+  </div>
+ </div>
+
+ <div class="tabs">
+  <button class="active" onclick="showTab('home',this)">Dashboard</button>
+  <button class="secondary" onclick="showTab('trade',this)">Trade</button>
+  <button class="secondary" onclick="showTab('portfolio',this)">Portfolio</button>
+  <button class="secondary" onclick="showTab('history',this)">History</button>
+ </div>
+
+ <section class="panel active" id="home">
+  <div class="card">
+   <h2>Market Watch</h2>
+   <div id="market"></div>
+  </div>
+  <div class="notice">
+   Welcome to TradePilot! Practice buying and selling with virtual money. No real money is involved.
+  </div>
+ </section>
+
+ <section class="panel" id="trade">
+  <div class="card">
+   <h2>Place Virtual Order</h2>
+   <label>Select Stock</label>
+   <select id="symbol" onchange="updatePrice()">
+    <option value="RELIANCE">Reliance Industries</option>
+    <option value="TCS">TCS</option>
+    <option value="HDFCBANK">HDFC Bank</option>
+    <option value="INFY">Infosys</option>
+    <option value="ITC">ITC</option>
+   </select>
+   <div class="muted">Demo Price: <strong id="price" class="green">₹1,450</strong></div>
+   <br>
+   <label>Quantity</label>
+   <input id="quantity" type="number" min="1" value="1">
+   <div class="row">
+    <button onclick="trade('BUY')">BUY</button>
+    <button class="sell" onclick="trade('SELL')">SELL</button>
+   </div>
+   <p class="small">Orders are simulated using demo prices only.</p>
+  </div>
+ </section>
+
+ <section class="panel" id="portfolio">
+  <div class="card">
+   <h2>My Portfolio</h2>
+   <div id="holdings" class="muted">No holdings yet. Start trading!</div>
+  </div>
+ </section>
+
+ <section class="panel" id="history">
+  <div class="card">
+   <h2>Order History</h2>
+   <div id="historyList" class="muted">No orders yet.</div>
+  </div>
+ </section>
+
+ <footer>TradePilot v1.0 | Paper Trading Only<br>Market prices are illustrative demo values.</footer>
+</main>
+
+<script>
+const prices={
+ RELIANCE:1450,
+ TCS:3200,
+ HDFCBANK:1750,
+ INFY:1500,
+ ITC:450
+};
+
+const names={
+ RELIANCE:"Reliance Industries",
+ TCS:"TCS",
+ HDFCBANK:"HDFC Bank",
+ INFY:"Infosys",
+ ITC:"ITC"
+};
+
+let account=JSON.parse(localStorage.getItem("tp_account")) || {
+ cash:1000000,
+ holdings:{},
+ history:[]
+};
+
+function money(n){
+ return "₹"+Number(n).toLocaleString("en-IN",{
+  maximumFractionDigits:2
+ });
+}
+
+function save(){
+ localStorage.setItem("tp_account",JSON.stringify(account));
+ render();
+}
+
+function showTab(id,btn){
+ document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
+ document.querySelectorAll(".tabs button").forEach(b=>{
+  b.classList.remove("active");
+  b.classList.add("secondary");
+ });
+ document.getElementById(id).classList.add("active");
+ btn.classList.add("active");
+ btn.classList.remove("secondary");
+}
+
+function updatePrice(){
+ let symbol=document.getElementById("symbol").value;
+ document.getElementById("price").textContent=money(prices[symbol]);
+}
+
+function trade(type){
+ let symbol=document.getElementById("symbol").value;
+ let qty=Number(document.getElementById("quantity").value);
+ let price=prices[symbol];
+ let amount=qty*price;
+
+ if(!Number.isInteger(qty)||qty<1){
+  alert("Please enter a valid quantity");
+  return;
+ }
+
+ if(type==="BUY"){
+  if(amount>account.cash){
+   alert("Insufficient virtual cash!");
+   return;
+  }
+  let h=account.holdings[symbol]||{qty:0,cost:0};
+  h.qty+=qty;
+  h.cost+=amount;
+  account.holdings[symbol]=h;
+  account.cash-=amount;
+ }else{
+  let h=account.holdings[symbol];
+  if(!h||h.qty<qty){
+   alert("You don't have enough shares to sell!");
+   return;
+  }
+  let avg=h.cost/h.qty;
+  h.qty-=qty;
+  h.cost-=avg*qty;
+  account.cash+=amount;
+  if(h.qty===0) delete account.holdings[symbol];
+ }
+
+ account.history.unshift({
+  type,symbol,qty,price,
+  date:new Date().toLocaleString("en-IN")
+ });
+
+ alert(type+" order successful!");
+ save();
+}
+
+function render(){
+ let invested=0;
+ let current=0;
+ let market="";
+
+ Object.keys(prices).forEach(s=>{
+  market+=`
+  <div class="stock row">
+   <div>
+    <strong>${names[s]}</strong>
+    <div class="small">${s}</div>
+   </div>
+   <div style="text-align:right">
+    <strong>${money(prices[s])}</strong>
+    <div class="small green">DEMO PRICE</div>
+   </div>
+  </div>`;
+ });
+
+ document.getElementById("market").innerHTML=market;
+
+ let holdings="";
+ Object.keys(account.holdings).forEach(s=>{
+  let h=account.holdings[s];
+  let value=h.qty*prices[s];
+  invested+=h.cost;
+  current+=value;
+  holdings+=`
+  <div class="stock row">
+   <div>
+    <strong>${names[s]}</strong>
+    <div class="small">${h.qty} shares</div>
+   </div>
+   <div style="text-align:right">
+    <strong>${money(value)}</strong>
+    <div class="small">Avg. ${money(h.cost/h.qty)}</div>
+   </div>
+  </div>`;
+ });
+
+ document.getElementById("holdings").innerHTML=
+ holdings||"No holdings yet. Start trading!";
+
+ let pl=current-invested;
+ document.getElementById("balance").textContent=money(account.cash+current);
+ document.getElementById("cash").textContent=money(account.cash);
+ document.getElementById("invested").textContent=money(invested);
+ document.getElementById("profit").textContent=money(pl);
+ document.getElementById("profit").className=pl>=0?"green":"red";
+
+ document.getElementById("historyList").innerHTML=
+ account.history.map(o=>`
+ <div class="stock">
+  <div class="row">
+   <strong class="${o.type==="BUY"?"green":"red"}">${o.type} ${o.symbol}</strong>
+   <strong>${money(o.qty*o.price)}</strong>
+  </div>
+  <div class="small">${o.qty} shares × ${money(o.price)}</div>
+  <div class="small">${o.date}</div>
+ </div>`).join("")||"No orders yet.";
+}
+
+updatePrice();
+render();
+</script>
+</body>
+</html>
